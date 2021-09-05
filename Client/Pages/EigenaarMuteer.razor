@@ -1,0 +1,141 @@
+﻿@page "/eigenaarmuteer/{ID:int}"
+@inject HttpClient httpClient
+@inject NavigationManager navigationManager
+
+<h3>Eigenaargegevens wijzigen</h3>
+
+<div>@resultaat</div>
+<br />
+
+@if (eigenaar == null)
+{
+    <p><em>Bezig met laden...</em></p>
+}
+else
+{
+<EditForm Model="@eigenaar" OnSubmit="Opslaan">
+
+    <div class="form-group row">
+        <div class="col-sm-2">
+            <label class="col=sm-2 col-form-label">ID</label>
+        </div>
+        <div class="col-sm-10">
+            @ID
+        </div>
+    </div>
+
+    <div class="form-group row">
+        <div class="col-sm-2">
+            <label for="Omschrijving" class="col=sm-2 col-form-label">Omschrijving</label>
+        </div>
+        <div class="col-sm-10">
+            <InputText id="Omschrijving" @bind-Value="eigenaar.Omschrijving" 
+                       class="form-control" 
+                       placeholder="Geef een omschrijving voor de eigenaar..." />
+        </div>
+    </div>
+
+    <div class="form-group row">
+        <div class="col-sm-2">
+            <label for="" class="col=sm-2 col-form-label">Voornaam</label>
+        </div>
+        <div class="col-sm-10">
+            <InputText id="Voornaam" @bind-Value="eigenaar.Voornaam" class="form-control" placeholder="De voornaam van de eigenaar..." />
+        </div>
+    </div>
+
+    <div class="form-group row">
+        <div class="col-sm-2">
+            <label for="" class="col=sm-2 col-form-label">Achternaam</label>
+        </div>
+        <div class="col-sm-10">
+            <InputText id="Achternaam" @bind-Value="eigenaar.Achternaam" class="form-control" placeholder="De achternaam van de eigenaar..." />
+        </div>
+    </div>
+
+    <div class="form-group row">
+        <div class="col-sm-2">
+            <label for="" class="col=sm-2 col-form-label">Regio</label>
+        </div>
+        <div class="col-sm-10">
+            <InputText id="Regio" @bind-Value="eigenaar.Regio" class="form-control" placeholder="De regio van de eigenaar..." />
+        </div>
+    </div>
+
+    <div class="form-group row">
+        <button type="submit" class="btn btn-primary">Opslaan</button>&nbsp;
+        <button type="button" class="btn btn-secondary" @onclick="(() => Terug())">Terug</button>&nbsp;
+    </div>
+
+</EditForm>
+}
+
+@code {
+
+    [Parameter] public int ID { get; set; }
+    private EIGENAAR eigenaar = new EIGENAAR();
+    string resultaat;
+    Fout fout = new Fout();
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            //---
+            // Designed (returning deserialized objects directly), it does not produce any HttpResponseMessage
+            // eigenaar = await httpClient.GetFromJsonAsync<EIGENAAR>("/api/CRUD/HaalOpEigenaar" + "/" + ID);
+            //---
+
+            var opgehaald = await httpClient.GetAsync("/api/CRUD/HaalOpEigenaar" + "/" + ID);
+            if (!opgehaald.IsSuccessStatusCode)
+            {
+                fout = await opgehaald.Content.ReadFromJsonAsync<Fout>();
+                resultaat = "De eigenaar met ID " + ID + " kan niet gevonden worden. " +
+                    fout.Detail.ToString() + " (" + opgehaald.StatusCode  + ")";
+            }
+            else
+            {
+                eigenaar = await opgehaald.Content.ReadFromJsonAsync<EIGENAAR>();
+                resultaat = eigenaar.Voornaam + " " + eigenaar.Achternaam +
+                    " is geregistreerd onder ID " + eigenaar.ID + ".";
+            }
+        }
+
+        catch (Exception e)
+        {
+            resultaat = "De eigenaar met ID " + ID +
+                " kan niet gevonden worden. (" + e.Message + ")";
+            ID = 0;
+        }
+    }
+
+    private async Task Opslaan()
+    {
+        if (ID != 0)
+        {
+            var opgeslagen =  await httpClient.PutAsJsonAsync<EIGENAAR>($"/api/CRUD/Muteer", eigenaar);
+
+            if (!opgeslagen.IsSuccessStatusCode)
+            {
+                fout = await opgeslagen.Content.ReadFromJsonAsync<Fout>();
+                resultaat = "De gegevens van de eigenaar kunnen niet opgeslagen worden. " +
+                    fout.Detail.ToString() + " (" + opgeslagen.StatusCode + ")";
+            }
+            else
+            {
+                resultaat = DateTime.Now + " de gewijzigde eigenaargegevens zijn opgeslagen. " +
+                                           "(HTTP Status code " + opgeslagen.StatusCode + ").";
+            }
+        }
+        else
+        {
+            resultaat = "De te wijzigen gegevens van deze eigenaar kunnen niet gevonden worden.";
+        }
+    }
+
+    private void Terug()
+    {
+        navigationManager.NavigateTo($"/eigenaren");
+    }
+
+}

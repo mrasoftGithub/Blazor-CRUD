@@ -1,0 +1,100 @@
+﻿@page "/eigenaren"
+@inject HttpClient httpClient
+@inject NavigationManager navigationManager
+
+<div class="row">
+    <div>
+        <h3>Eigenaren</h3>
+    </div>
+    <div>
+        &nbsp;<button class="btn btn-primary" @onclick="(() => EigenaarVoegToe())">Voeg Toe</button>
+    </div>
+</div>
+
+<div>@resultaat</div>
+<br />
+
+@if (eigenaren == null)
+{
+    <p><em>Bezig met laden...</em></p>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Omschrijving</th>
+                <th>Regio</th>
+                <th>Wijzig</th>
+                <th>Verwijder</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var eigenaar in eigenaren)
+            {
+                <tr>
+                    <td>@eigenaar.ID</td>
+                    <td>@eigenaar.Omschrijving</td>
+                    <td>@eigenaar.Regio</td>
+                    <td>
+                        <button class="btn btn-info" @onclick="(() => EigenaarMuteer(eigenaar.ID))">Wijzig</button>
+                    </td>
+                    <td>
+                        <button class="btn btn-danger" @onclick="(() => EigenaarVerwijder(eigenaar.ID))">Verwijder</button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+
+    private EIGENAAR[] eigenaren;
+    string resultaat;
+    Fout fout = new Fout();
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            //---
+            // Designed (returning deserialized objects directly),
+            // it does not produce any HttpResponseMessage
+            // eigenaren = await httpClient.GetFromJsonAsync<EIGENAAR[]>("/api/CRUD/HaalOpEigenaren");
+            //---
+            var opgehaald = await httpClient.GetAsync("/api/CRUD/HaalOpEigenaren");
+            if (!opgehaald.IsSuccessStatusCode)
+            {
+                fout = await opgehaald.Content.ReadFromJsonAsync<Fout>();
+                resultaat = "De gegevens van de eigenaren kunnen niet opgehaald worden. " +
+                    fout.Detail.ToString() + " (" + opgehaald.StatusCode + ")";
+            }
+            else
+            {
+                eigenaren = await opgehaald.Content.ReadFromJsonAsync<EIGENAAR[]>();
+            }
+        }
+        catch (Exception e)
+        {
+            resultaat = e.Message;
+        }
+    }
+
+    private void EigenaarVoegToe()
+    {
+        navigationManager.NavigateTo("/eigenaarvoegtoe");
+    }
+
+    private void EigenaarMuteer(int ID)
+    {
+        navigationManager.NavigateTo("/eigenaarmuteer/" + ID);
+    }
+
+    private void EigenaarVerwijder(int ID)
+    {
+        navigationManager.NavigateTo("/eigenaarverwijder/" + ID);
+    }
+
+}

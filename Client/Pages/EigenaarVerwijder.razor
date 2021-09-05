@@ -1,0 +1,134 @@
+﻿@page "/eigenaarverwijder/{ID:int}"
+@inject HttpClient httpClient
+@inject NavigationManager navigationManager
+
+<h3>Verwijder een eigenaar</h3>
+<div>@resultaat</div>
+<br />
+
+@if (eigenaar == null)
+{
+    <p><em>Bezig met laden...</em></p>
+}
+else
+{
+    <div class="form-group row">
+        <div class="col-sm-2">
+            <label class="col=sm-2 col-form-label">ID</label>
+        </div>
+        <div class="col-sm-10">
+            @ID
+        </div>
+    </div>
+
+    <div class="form-group row">
+        <div class="col-sm-2">
+            <label for="Omschrijving" class="col=sm-2 col-form-label">Omschrijving</label>
+        </div>
+        <div class="col-sm-10">
+            @eigenaar.Omschrijving
+        </div>
+    </div>
+
+    <div class="form-group row">
+        <div class="col-sm-2">
+            <label for="" class="col=sm-2 col-form-label">Voornaam</label>
+        </div>
+        <div class="col-sm-10">
+            @eigenaar.Voornaam
+        </div>
+    </div>
+
+    <div class="form-group row">
+        <div class="col-sm-2">
+            <label for="" class="col=sm-2 col-form-label">Achternaam</label>
+        </div>
+        <div class="col-sm-10">
+            @eigenaar.Achternaam
+        </div>
+    </div>
+
+    <div class="form-group row">
+        <div class="col-sm-2">
+            <label for="" class="col=sm-2 col-form-label">Regio</label>
+        </div>
+        <div class="col-sm-10">
+            @eigenaar.Regio
+        </div>
+    </div>
+
+    <div class="form-group row">
+        <button type="submit" class="btn btn-danger" @onclick="(() => Verwijder())">Verwijder</button>&nbsp;
+        <button type="button" class="btn btn-secondary" @onclick="(() => Terug())">Terug</button>&nbsp;
+    </div>
+
+}
+
+@code {
+    [Parameter] public int ID { get; set; }
+    private EIGENAAR eigenaar = new EIGENAAR();
+    string resultaat;
+    Fout fout = new Fout();
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            //---
+            // Designed (returning deserialized objects directly), it does not produce any HttpResponseMessage
+            // eigenaar = await httpClient.GetFromJsonAsync<EIGENAAR>("/api/CRUD/HaalOpEigenaar" + "/" + ID);
+            //---
+
+            var opgehaald = await httpClient.GetAsync("/api/CRUD/HaalOpEigenaar" + "/" + ID);
+            if (!opgehaald.IsSuccessStatusCode)
+            {
+                fout = await opgehaald.Content.ReadFromJsonAsync<Fout>();
+                resultaat = "De eigenaar met ID " + ID + " kan niet gevonden worden. " + 
+                    fout.Detail.ToString() + " (" + opgehaald.StatusCode + ")";
+            }
+            else
+            {
+                eigenaar = await opgehaald.Content.ReadFromJsonAsync<EIGENAAR>();
+                resultaat = eigenaar.Voornaam + " " + eigenaar.Achternaam + 
+                    " is geregistreerd onder ID " + eigenaar.ID + ".";
+            }
+        }
+
+        catch (Exception e)
+        {
+            resultaat = "De eigenaar met ID " + ID + 
+                " kan niet gevonden worden. (" + e.Message + ")";
+            ID = 0;
+        }
+    }
+
+    private async Task Verwijder()
+    {
+        if (ID != 0)
+        {
+            var verwijderd = await httpClient.DeleteAsync($"/api/CRUD/Verwijder/" + ID);
+
+            if (!verwijderd.IsSuccessStatusCode)
+            {
+                fout = await verwijderd.Content.ReadFromJsonAsync<Fout>();
+                resultaat = "De eigenaar kan niet verwijderd worden. " + 
+                    fout.Detail.ToString() + " (" + verwijderd.StatusCode + ")";
+            }
+            else
+            {
+                resultaat = DateTime.Now + " de eigenaar is verwijderd. (" + 
+                    verwijderd.StatusCode + ").";
+                ID = 0;
+            }
+        }
+        else
+        {
+            resultaat = "De eigenaar is al verwijderd.";
+        }
+    }
+
+    private void Terug()
+    {
+        navigationManager.NavigateTo($"/eigenaren");
+    }
+}
