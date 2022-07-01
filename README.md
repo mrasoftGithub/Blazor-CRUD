@@ -12,4 +12,34 @@ De voorbeeldcode bevat een implementatie die gebruik maakt van een SQL Server da
 
 Pas ten slotte de connectiestring aan in configuratiebestand **appsettings.json** in je .server project.
 
+T-SQL dat je kunt gebruiken voor de aanmaak van tabel **EIGENAAR**:
+```sql
+USE [VOORBEELD]
+GO
+
+SET ANSI_NULLS ON
+GO
+
+SET QUOTED_IDENTIFIER ON
+GO
+
+CREATE TABLE [dbo].[EIGENAAR](
+	[ID] [int] IDENTITY(1,1) NOT NULL,
+	[omschrijving] [nvarchar](max) NULL,
+	[regio] [nvarchar](50) NULL,
+	[achternaam] [nvarchar](50) NULL,
+	[voornaam] [nvarchar](50) NULL,
+ CONSTRAINT [PK_tblEigenaar] PRIMARY KEY CLUSTERED 
+ (
+	[ID] ASC
+ )
+ WITH (PAD_INDEX = OFF, 
+       STATISTICS_NORECOMPUTE = OFF, 
+       IGNORE_DUP_KEY = OFF, 
+       ALLOW_ROW_LOCKS = ON, 
+       ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+
+GO
+```
 Lees ook mijn [blog](https://www.mrasoft.nl) over C# en Blazor.
